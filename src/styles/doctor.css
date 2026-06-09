@@ -1,0 +1,156 @@
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:sans-serif;
+  background:#f1f5f9;
+}
+
+.doctorPage{
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
+}
+
+.topBar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  flex-wrap:wrap;
+}
+
+.topBar h1{
+  font-size:32px;
+}
+
+.countBox{
+  background:#2563eb;
+  color:white;
+  padding:12px 20px;
+  border-radius:14px;
+  font-weight:bold;
+}
+
+.doctorSelect{
+  width:100%;
+  margin-top:20px;
+  padding:16px;
+  border:none;
+  border-radius:16px;
+  background:white;
+  font-size:16px;
+}
+
+.currentCard{
+  background:white;
+  margin-top:25px;
+  padding:30px;
+  border-radius:25px;
+  text-align:center;
+
+  box-shadow:
+  0 4px 20px rgba(0,0,0,.06);
+}
+
+.bigNumber{
+  font-size:75px;
+  font-weight:bold;
+  color:#2563eb;
+  margin:10px 0;
+}
+
+.currentCard h1{
+  margin-bottom:10px;
+}
+
+.currentCard p{
+  color:gray;
+}
+
+.nextBtn{
+  width:100%;
+  margin-top:20px;
+  border:none;
+  background:#2563eb;
+  color:white;
+  padding:18px;
+  border-radius:16px;
+  font-size:18px;
+  cursor:pointer;
+}
+
+.finishBtn{
+  width:100%;
+  margin-top:20px;
+  border:none;
+  background:green;
+  color:white;
+  padding:18px;
+  border-radius:16px;
+  font-size:18px;
+  cursor:pointer;
+}
+
+.queueWrapper{
+  margin-top:30px;
+}
+
+.queueWrapper h2{
+  margin-bottom:15px;
+}
+
+.queueCard{
+  background:white;
+  padding:20px;
+  border-radius:20px;
+  margin-bottom:15px;
+
+  box-shadow:
+  0 4px 15px rgba(0,0,0,.05);
+}
+
+.number{
+  width:55px;
+  height:55px;
+  border-radius:50%;
+  background:#2563eb;
+  color:white;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  font-size:22px;
+  font-weight:bold;
+
+  margin-bottom:10px;
+}
+
+.queueCard h3{
+  margin-bottom:8px;
+}
+
+.queueCard p{
+  color:gray;
+}
+
+.empty{
+  margin-top:10px;
+  color:gray;
+}
+
+@media(max-width:700px){
+
+  .topBar h1{
+    font-size:24px;
+  }
+
+  .bigNumber{
+    font-size:55px;
+  }
+
+}
