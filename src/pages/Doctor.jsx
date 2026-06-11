@@ -10,23 +10,31 @@ const Doctor = () => {
   const [appointments, setAppointments] = useState([]);
   const [currentPatient, setCurrentPatient] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
 
   const loadDoctors = async () => {
     console.log("📋 loadDoctors boshlandi");
-    const data = await getDoctors();
-    console.log("Olingan data:", data);
-    if (Array.isArray(data)) {
-      setDoctors(data);
-      if (data.length > 0) {
-        const saved = localStorage.getItem("selectedDoctor");
-        if (!saved) {
-          setSelectedDoctor(data[0].id);
-        } else {
-          setSelectedDoctor(saved);
+    setDoctorsLoading(true);
+    try {
+      const data = await getDoctors();
+      console.log("Olingan data:", data);
+      if (Array.isArray(data)) {
+        setDoctors(data);
+        if (data.length > 0) {
+          const saved = localStorage.getItem("selectedDoctor");
+          if (!saved) {
+            setSelectedDoctor(data[0].id);
+          } else {
+            setSelectedDoctor(saved);
+          }
         }
+      } else {
+        console.warn("❌ Data array emas!", data);
       }
-    } else {
-      console.warn("❌ Data array emas!", data);
+    } catch (err) {
+      console.error("❌ loadDoctors xatolik:", err);
+    } finally {
+      setDoctorsLoading(false);
     }
   };
 
@@ -104,6 +112,16 @@ const Doctor = () => {
     }
   };
 
+  // If either doctors or appointments are loading, show a full-page loader
+  if (doctorsLoading || loading) {
+    return (
+      <div className="fullLoader">
+        <div className="spinner" />
+        <p>Yuklanmoqda...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="doctorPage">
 
@@ -118,12 +136,19 @@ const Doctor = () => {
         className="doctorSelect"
         value={selectedDoctor}
         onChange={(e) => setSelectedDoctor(e.target.value)}
+        disabled={doctorsLoading}
       >
-        {doctors.map((doc) => (
-          <option key={doc.id} value={doc.id}>
-            {doc.name} - {doc.specialization}
-          </option>
-        ))}
+        {doctorsLoading ? (
+          <option value="">Yuklanmoqda...</option>
+        ) : doctors.length === 0 ? (
+          <option value="">Shifokor topilmadi</option>
+        ) : (
+          doctors.map((doc) => (
+            <option key={doc.id} value={doc.id}>
+              {doc.name} - {doc.specialization}
+            </option>
+          ))
+        )}
       </select>
 
       {/* CURRENT */}
