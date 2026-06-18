@@ -1,4 +1,4 @@
-const API = "https://7534.sangilov.uz";
+const API = "https://doctorapi.sangilov.uz";
 
 export const getDoctors = async () => {
   try {

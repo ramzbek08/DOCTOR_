@@ -42,12 +42,10 @@ const Doctor = () => {
     if (!doctorId) return;
     setLoading(true);
     const data = await getAppointments(doctorId);
-    if (Array.isArray(data)) {
-      setAppointments(data);
-    } else {
-      setAppointments([]);
-    }
+    const arr = Array.isArray(data) ? data : [];
+    setAppointments(arr);
     setLoading(false);
+    return arr;
   };
 
   useEffect(() => {
@@ -62,14 +60,32 @@ const Doctor = () => {
 
   useEffect(() => {
     if (selectedDoctor) {
-      loadAppointments(selectedDoctor);
-      setCurrentPatient(null);
+      loadAppointments(selectedDoctor).then((arr) => {
+        const savedId = localStorage.getItem("currentPatientId");
+        if (savedId) {
+          const patient = arr.find((a) => String(a.id) === String(savedId));
+          if (patient) {
+            setCurrentPatient(patient);
+          } else {
+            localStorage.removeItem("currentPatientId");
+            setCurrentPatient(null);
+          }
+        } else {
+          setCurrentPatient(null);
+        }
+      });
     }
   }, [selectedDoctor]);
 
   const nextPatient = () => {
     if (appointments.length === 0) return;
-    setCurrentPatient(appointments[0]);
+    const p = appointments[0];
+    setCurrentPatient(p);
+    try {
+      localStorage.setItem("currentPatientId", String(p.id));
+    } catch (err) {
+      console.warn("localStorage set error for currentPatientId", err);
+    }
   };
 
   const finishPatient = async () => {
@@ -88,7 +104,6 @@ const Doctor = () => {
       );
 
       console.log("✅ Bemor yopildi, response:", closeRes);
-
       console.log("🔄 Navbatlar qayta yuklash:", selectedDoctor);
       const updatedAppointments = await getAppointments(selectedDoctor);
       console.log("📋 Qayta yuklangan navbatlar:", updatedAppointments);
@@ -103,9 +118,15 @@ const Doctor = () => {
       if (normalized.length > 0) {
         console.log("➡️ Keyingi bemor tanlanildi:", normalized[0]);
         setCurrentPatient(normalized[0]);
+        try {
+          localStorage.setItem("currentPatientId", String(normalized[0].id));
+        } catch (err) {
+          console.warn("localStorage set error for currentPatientId", err);
+        }
       } else {
         console.log("✅ Barcha bemorlar tugallandi");
         setCurrentPatient(null);
+        localStorage.removeItem("currentPatientId");
       }
     } catch (err) {
       console.error("❌ Xatolik tugatish vaqtida:", err);
@@ -159,7 +180,7 @@ const Doctor = () => {
             <div className="bigNumber">
               #{appointments.findIndex((x) => x.id === currentPatient.id) + 1}
             </div>
-            <h1>{currentPatient.patient_name}</h1>
+            <h1>{currentPatient.name}</h1>
             <p>📞 {currentPatient.phone}</p>
             <button className="finishBtn" onClick={finishPatient}>
               ✅ Tugatish
@@ -187,7 +208,7 @@ const Doctor = () => {
             <div key={item.id} className="queueCard">
               <div>
                 <div className="number">#{index + 1}</div>
-                <h3>{item.patient_name}</h3>
+                <h3>{item.name}</h3>
                 <p>📞 {item.phone}</p>
               </div>
             </div>
