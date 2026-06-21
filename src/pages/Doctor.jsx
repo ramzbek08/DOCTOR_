@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "../styles/doctor.css";
 import { getDoctors, getAppointments, closeAppointment } from "../api/api";
 
@@ -11,6 +11,64 @@ const Doctor = () => {
   const [currentPatient, setCurrentPatient] = useState(null);
   const [loading, setLoading] = useState(false);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
+
+  const currentPatientRef = useRef(null);
+  useEffect(() => {
+    currentPatientRef.current = currentPatient;
+  }, [currentPatient]);
+
+  // ====== ✅ YANGI: navbat raqamlarini doctor bo'yicha localStorage'da saqlash ======
+
+  const getNumberMapKey = (doctorId) => `appointmentNumbers_${doctorId}`;
+
+  const loadNumberMap = (doctorId) => {
+    try {
+      const raw = localStorage.getItem(getNumberMapKey(doctorId));
+      return raw ? JSON.parse(raw) : {};
+    } catch (err) {
+      console.warn("Number map o'qishda xatolik", err);
+      return {};
+    }
+  };
+
+  const saveNumberMap = (doctorId, map) => {
+    try {
+      localStorage.setItem(getNumberMapKey(doctorId), JSON.stringify(map));
+    } catch (err) {
+      console.warn("Number map yozishda xatolik", err);
+    }
+  };
+
+  // Har bir appointment'ga, agar hali raqam berilmagan bo'lsa, navbatdagi keyingi raqamni biriktiradi.
+  // Qaytaradi: { numbers: { id: raqam }, list: [{...appointment, _num}] }
+  const assignNumbers = (doctorId, arr) => {
+    const map = loadNumberMap(doctorId);
+
+    // Hozir mavjud bo'lgan eng katta raqamni topamiz (davom ettirish uchun)
+    let maxNum = 0;
+    Object.values(map).forEach((n) => {
+      if (n > maxNum) maxNum = n;
+    });
+
+    arr.forEach((item) => {
+      const key = String(item.id);
+      if (!map[key]) {
+        maxNum += 1;
+        map[key] = maxNum;
+      }
+    });
+
+    saveNumberMap(doctorId, map);
+
+    const list = arr.map((item) => ({
+      ...item,
+      _num: map[String(item.id)],
+    }));
+
+    return list;
+  };
+
+  // ====== ====== ====== ====== ====== ====== ====== ====== ======
 
   const loadDoctors = async () => {
     console.log("📋 loadDoctors boshlandi");
@@ -38,14 +96,16 @@ const Doctor = () => {
     }
   };
 
-  const loadAppointments = async (doctorId) => {
-    if (!doctorId) return;
-    setLoading(true);
+  // silent = true bo'lsa, loading spinner ko'rsatilmaydi (fon rejimida yangilash uchun)
+  const loadAppointments = async (doctorId, silent = false) => {
+    if (!doctorId) return [];
+    if (!silent) setLoading(true);
     const data = await getAppointments(doctorId);
     const arr = Array.isArray(data) ? data : [];
-    setAppointments(arr);
-    setLoading(false);
-    return arr;
+    const withNumbers = assignNumbers(doctorId, arr);
+    setAppointments(withNumbers);
+    if (!silent) setLoading(false);
+    return withNumbers;
   };
 
   useEffect(() => {
@@ -77,6 +137,38 @@ const Doctor = () => {
     }
   }, [selectedDoctor]);
 
+  // Har 4 sekundda fon rejimida navbatlarni qayta yuklash (refreshsiz yangi navbat ko'rinishi uchun)
+  useEffect(() => {
+    if (!selectedDoctor) return;
+
+    const interval = setInterval(async () => {
+      const data = await getAppointments(selectedDoctor);
+      const arr = Array.isArray(data) ? data : [];
+      const withNumbers = assignNumbers(selectedDoctor, arr);
+
+      setAppointments((prev) => {
+        const prevIds = prev.map((x) => x.id).join(",");
+        const newIds = withNumbers.map((x) => x.id).join(",");
+        if (prevIds === newIds) return prev;
+        return withNumbers;
+      });
+
+      const cp = currentPatientRef.current;
+      if (cp) {
+        const stillExists = withNumbers.find((a) => String(a.id) === String(cp.id));
+        if (!stillExists) {
+          setCurrentPatient(null);
+          localStorage.removeItem("currentPatientId");
+        } else {
+          // _num yangilanган bo'lishi mumkin (aslida o'zgarmaydi, lekin xavfsizlik uchun)
+          setCurrentPatient(stillExists);
+        }
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [selectedDoctor]);
+
   const nextPatient = () => {
     if (appointments.length === 0) return;
     const p = appointments[0];
@@ -97,7 +189,6 @@ const Doctor = () => {
     try {
       console.log("🔄 Bemor tugatish boshlandi:", currentPatient);
 
-      // ✅ TUZATILDI: doctor_id va appointment_id ikkalasi ham yuborilmoqda
       const closeRes = await closeAppointment(
         Number(selectedDoctor),
         currentPatient.id
@@ -108,9 +199,11 @@ const Doctor = () => {
       const updatedAppointments = await getAppointments(selectedDoctor);
       console.log("📋 Qayta yuklangan navbatlar:", updatedAppointments);
 
-      const normalized = Array.isArray(updatedAppointments)
+      const normalizedRaw = Array.isArray(updatedAppointments)
         ? updatedAppointments
         : updatedAppointments.message || updatedAppointments.appointments || [];
+
+      const normalized = assignNumbers(selectedDoctor, normalizedRaw);
 
       console.log("✅ Normalizatsiya qilindi:", normalized);
       setAppointments(normalized);
@@ -133,7 +226,6 @@ const Doctor = () => {
     }
   };
 
-  // If either doctors or appointments are loading, show a full-page loader
   if (doctorsLoading || loading) {
     return (
       <div className="fullLoader">
@@ -177,8 +269,9 @@ const Doctor = () => {
         <h2>🏥 Hozir qabulda</h2>
         {currentPatient ? (
           <>
+            {/* ✅ TUZATILDI: o'zgarmas, localStorage'da saqlangan asl navbat raqami */}
             <div className="bigNumber">
-              #{appointments.findIndex((x) => x.id === currentPatient.id) + 1}
+              #{currentPatient._num}
             </div>
             <h1>{currentPatient.name}</h1>
             <p>📞 {currentPatient.phone}</p>
@@ -195,7 +288,7 @@ const Doctor = () => {
           </div>
         )}
       </div>
-
+  
       {/* QUEUE */}
       <div className="queueWrapper">
         <h2>📋 Navbatlar</h2>
@@ -204,10 +297,11 @@ const Doctor = () => {
         ) : appointments.length === 0 ? (
           <p className="empty">Navbat yo'q</p>
         ) : (
-          appointments.map((item, index) => (
+          appointments.map((item) => (
             <div key={item.id} className="queueCard">
               <div>
-                <div className="number">#{index + 1}</div>
+                {/* ✅ TUZATILDI: o'zgarmas asl navbat raqami */}
+                <div className="number">#{item._num}</div>
                 <h3>{item.name}</h3>
                 <p>📞 {item.phone}</p>
               </div>
