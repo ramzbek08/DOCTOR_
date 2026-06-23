@@ -137,7 +137,7 @@ const Doctor = () => {
     }
   }, [selectedDoctor]);
 
-  // Har 4 sekundda fon rejimida navbatlarni qayta yuklash (refreshsiz yangi navbat ko'rinishi uchun)
+  // Har 10 sekundda fon rejimida navbatlarni qayta yuklash (refreshsiz yangi navbat ko'rinishi uchun)
   useEffect(() => {
     if (!selectedDoctor) return;
 
@@ -164,7 +164,7 @@ const Doctor = () => {
           setCurrentPatient(stillExists);
         }
       }
-    }, 4000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [selectedDoctor]);
