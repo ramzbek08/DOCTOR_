@@ -1,4 +1,4 @@
-const API = "https://doctorapi.sangilov.uz";
+const API = "https://doctorsappointment-production-d0b9.up.railway.app";
 
 export const getDoctors = async () => {
   try {
@@ -18,10 +18,13 @@ export const getDoctors = async () => {
   }
 };
 
-export const getAppointments = async (doctorId) => {
+export const getAppointments = async (doctorId, date) => {
   try {
-    console.log("🔄 Navbatlar yuklash:", doctorId);
-    const res = await fetch(`${API}/doctor/get_appointments/${doctorId}`);
+    console.log("🔄 Navbatlar yuklash:", doctorId, date || "");
+    const url = date
+      ? `${API}/doctor/get_appointments/${doctorId}?appointment_date=${date}`
+      : `${API}/doctor/get_appointments/${doctorId}`;
+    const res = await fetch(url);
     console.log("Response status:", res.status);
     if (res.status === 404) {
       console.warn("Navbatlar topilmadi (404), bo'sh array qaytariladi");
@@ -36,6 +39,32 @@ export const getAppointments = async (doctorId) => {
   } catch (err) {
     console.error("❌ Xatolik:", err);
     return [];
+  }
+};
+
+// Doktor bemorga qayta ko'rik uchun tanlangan sanaga navbat yozadi
+export const createRevisitAppointment = async (doctorId, name, phone, appointmentDate) => {
+  try {
+    console.log("🔄 Qayta navbat yaratilmoqda:", { doctorId, name, phone, appointmentDate });
+    const res = await fetch(`${API}/doctor/create_appointment`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        phone,
+        doctor_id: Number(doctorId),
+        appointment_date: appointmentDate,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.detail ? JSON.stringify(data.detail) : "Xatolik");
+    console.log("✅ Qayta navbat yaratildi:", data);
+    return data;
+  } catch (err) {
+    console.error("❌ createRevisitAppointment xatolik:", err);
+    throw err;
   }
 };
 

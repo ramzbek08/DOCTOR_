@@ -28,7 +28,7 @@ onMessage(messaging, (payload) => {
 // Ruxsat so'rash va token olish
 export const requestPermission = async () => {
   try {
-    const permission = await Notification.requestPermission();
+    const permission = await Notification.requestPermission();    
 
     if (permission === "granted") {
       const token = await getToken(messaging, {
