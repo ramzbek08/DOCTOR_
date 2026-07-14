@@ -46,6 +46,7 @@ const Doctor = () => {
   const [finishing, setFinishing] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [showQR, setShowQR] = useState(false);
 
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
@@ -323,7 +324,7 @@ const Doctor = () => {
       <select
         className="doctorSelect"
         value={selectedDoctor}
-        onChange={(e) => setSelectedDoctor(e.target.value)}
+        onChange={(e) => { setSelectedDoctor(e.target.value); setShowQR(false); }}
         disabled={doctorsLoading}
       >
         {doctorsLoading ? (
@@ -338,6 +339,62 @@ const Doctor = () => {
           ))
         )}
       </select>
+
+      {/* QR KOD */}
+      {selectedDoctor && (() => {
+        const qrUrl = `https://dental.kliniknavbat.uz/createApp/${selectedDoctor}`;
+        const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(qrUrl)}`;
+        const docName = doctors.find((d) => String(d.id) === String(selectedDoctor))?.name || "";
+        return (
+          <div style={{ marginBottom: "16px" }}>
+            <button
+              onClick={() => setShowQR((v) => !v)}
+              style={{
+                width: "100%", padding: "12px", borderRadius: "10px",
+                border: "2px solid #16a34a",
+                background: showQR ? "#f0fdf4" : "#fff",
+                color: "#16a34a", fontSize: "15px", fontWeight: "600",
+                cursor: "pointer", display: "flex",
+                alignItems: "center", justifyContent: "center", gap: "8px"
+              }}
+            >
+              📷 {showQR ? "QR kodni yopish" : "QR kodni ko'rish"}
+            </button>
+
+            {showQR && (
+              <div style={{
+                marginTop: "12px", background: "#fff", borderRadius: "12px",
+                padding: "24px 16px", textAlign: "center",
+                border: "1px solid #e2e8f0",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
+              }}>
+                <p style={{ margin: "0 0 4px", color: "#64748b", fontSize: "13px" }}>Shifokor</p>
+                <p style={{ margin: "0 0 16px", fontWeight: "700", color: "#0f172a", fontSize: "16px" }}>{docName}</p>
+                <img
+                  src={qrImg}
+                  alt="QR kod"
+                  style={{ width: "220px", height: "220px", borderRadius: "8px", display: "block", margin: "0 auto 14px" }}
+                />
+                <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: "12px", wordBreak: "break-all" }}>
+                  {qrUrl}
+                </p>
+                <a
+                  href={qrImg}
+                  download={`qr-${docName}.png`}
+                  style={{
+                    display: "inline-block", padding: "10px 24px",
+                    borderRadius: "8px", background: "#16a34a",
+                    color: "#fff", fontWeight: "600", fontSize: "14px",
+                    textDecoration: "none"
+                  }}
+                >
+                  ⬇ Yuklab olish
+                </a>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="currentCard">
         <h2>🏥 Hozir qabulda</h2>
